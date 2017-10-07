@@ -217,21 +217,7 @@ class ShortInfo(object):
 # prepare (the most basic example solver)
 # ===============================================
 def A2(fun, lbounds, ubounds, budget):
-    """Efficient implementation of uniform random search between `lbounds` and `ubounds`."""
-    lbounds, ubounds = np.array(lbounds), np.array(ubounds)
-    dim, x_min, f_min = len(lbounds), (lbounds + ubounds) / 2, None
-    max_chunk_size = 1 + 4e4 / dim
-    while budget > 0:
-        chunk = int(min([budget, max_chunk_size]))
-        # about five times faster than "for k in range(budget):..."
-        X = lbounds + (ubounds - lbounds) * np.random.rand(chunk, dim)
-        F = [fun(x) for x in X]
-        if fun.number_of_objectives == 1:
-            index = np.argmin(F)
-            if f_min is None or F[index] < f_min:
-                x_min, f_min = X[index], F[index]
-        budget -= chunk
-    return x_min
+    return 0
 
 # ===============================================
 # loops over a benchmark problem suite
