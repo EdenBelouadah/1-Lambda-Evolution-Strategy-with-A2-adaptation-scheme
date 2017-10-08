@@ -15,7 +15,7 @@ X1=math.sqrt(2/math.pi)
 XN=math.sqrt(n)*(1-1/(4*n)+1/(21*math.pow(n,2)))
 #####################################################################
 #Defining the population: Pop=[X;fits;s;z;r]
-X=[] #values of the solution x1,...,xn more exactly (x1,sigma_i,z,r1)
+X=[] #values of the solution x1,...,xn more exactly (x1,sigma_i,z,r1),(x,sigma_i,z,r1)
 s=[] #weighted sum for adaptation of step size
 sr=[] #weighted sum for adaptation of step size
 z=[] # ~N(0,1)
@@ -25,18 +25,20 @@ fits=[]#fitnesses of the solutions
 
 #Evolution strategies with A2 reproduction scheme
 def ES_A2(fun, lbounds, ubounds, budget):
+    best_fit=10000000
     #Remplir la population initiale
     for i in range(mu):
         solution=[]
         for j in range(n):
-            solution.append(np.random.uniform(min_value,max_value)
+            solution.append(np.random.uniform(lbounds,ubounds))
         X.append(solution)
         s.append(0)
         fits.append(fitness(fun,solution))    
-        if(fits[i]==optimum)
-            return true
+        if(fits[i]<best_fit):
+            best_solution=i
+    
      
-    while(not happy):
+    while(fits[best_solution]>optimum and iter<=budget):#while not happy loop
         #choisir les parents
         
         #croisement
@@ -58,7 +60,14 @@ def ES_A2(fun, lbounds, ubounds, budget):
             #Direction adaptation
             sr[k]=max((1-c)*sr[C_k]+c*(cu*zrk),0)
             r=(1-cr)*X_Ek[]*+cr*(-)
-        
+            
+    #when we go out from the main loop: testing if we have found the optimum or 
+    #we failed to find it with the given budget        
+    if(iter<=budget):
+        return X[best_solution]
+    else:
+        print("can't find the optimum with this budget")
+        return null
             
  
 def fitness(fun,solution):
