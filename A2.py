@@ -21,7 +21,7 @@ def One_Lambda_ES_A2(fun, lbounds, ubounds, budget):
     s=0#weighted sum for adaptation step size
     sr=0 #weighted sum for adaptation of step size sigma_r    
     sigma=[]#vector of n variables :all individual step sizes
-    r=[]# a vector of n variables : direction vector used to produce line mutation
+    r=np.zeros((n,1))# a vector of n variables : direction vector used to produce line mutation
     sigma_r=0 #step size for direction 
     f=fitness(fun,X)
     while(f>optimum and iter<=budget):#while not happy loop
@@ -40,13 +40,15 @@ def One_Lambda_ES_A2(fun, lbounds, ubounds, budget):
                 #1. Mutation of the object variables
                 X_Nk[i][0]=P[i]+sigma[i]*zk[i]+sigma_r*zrk*r[i]
                 #2. Adaptation of the individual step sizes
-                s_Nk[k]=(1-c)*s+c*(cu*z[k])#WHAT IS ZK???????????
+                s_Nk[k]=(1-c)*s+c*(cu*zk)#WHAT IS ZK???????????
+            for i in range(n)
                 sigma_Nk[i]=sigma[i][1]*np.exp(B*(np.linalg.norm(s_Nk)-Xn))*np.exp(Bind*(math.fabs(s_Nk[i])-X1))#VERIFY THE FORMULA        
                 #Direction adaptation
-                sr[k]=max((1-c)*sr+c*(cu*zrk),0)
-                r_prime=(1-cr)*sigma_r*r+cr*(X_Nk-P)
-                r_Nk=r_prime/np.linalg.norm(r_prime)#VERIFY THIS ONE
-                sigma_r_Nk=max(sigma_r*np.exp(Br*(math.fabs(sr_Nk)-X1)),1/3*np.linalg.norm(sigma_Nk))
+                
+            sr[k]=max((1-c)*sr+c*(cu*zrk),0)
+            r_prime=(1-cr)*sigma_r*r+cr*(X_Nk-P)
+            r_Nk=r_prime/np.linalg.norm(r_prime)#VERIFY THIS ONE
+            sigma_r_Nk=max(sigma_r*np.exp(Br*(math.fabs(sr_Nk)-X1)),1/3*np.linalg.norm(sigma_Nk))
                 
             #Evaluate the k-th offspring
             f_Nk=fitness(fun,X_Nk)
