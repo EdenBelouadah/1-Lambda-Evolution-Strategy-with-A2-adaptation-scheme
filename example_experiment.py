@@ -55,6 +55,8 @@ except NameError: pass
 #imports for A2 implementation 
 from math import *
 import copy 
+import scipy.stats
+
 
 def default_observers(update={}):
     """return a map from suite names to default observer names"""
@@ -271,8 +273,15 @@ def A2(fun,lbounds, ubounds, budget):
         x_parent = copy.deepcopy(x_min)
 
         for k in xrange(Lambda):
-            z_r_k = np.random.normal(1) ###
-            z_k = np.random.normal(n) ### norm doesn't explose 
+
+            lower = -3
+            upper = 3
+            mu = 0
+            sigma = 1
+            
+            z_k = scipy.stats.truncnorm.rvs((lower-mu)/sigma,(upper-mu)/sigma,loc=mu,scale=sigma,size=n)
+            z_r_k = scipy.stats.truncnorm.rvs((lower-mu)/sigma,(upper-mu)/sigma,loc=mu,scale=sigma,size=1)
+            
             x = x_parent + delta * z_k + delta_r * z_r_k * r
 
             # selection step
@@ -286,7 +295,6 @@ def A2(fun,lbounds, ubounds, budget):
 
         #updating params 
         s = (1-c) * s + c * (cu * z)
-        if np.linalg.norm(s)>10e2: break
        
         delta = delta * exp(beta * (np.linalg.norm(s) - xi_n)) * np.exp(beta_ind * (np.absolute(s) - xi_1))
         
