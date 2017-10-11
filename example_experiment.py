@@ -273,7 +273,7 @@ def A2(fun,lbounds, ubounds, budget):
         for k in xrange(Lambda):
             z_r_k = np.random.normal(1) ###
             z_k = np.random.normal(n) ### norm doesn't explose 
-            x = x_min + delta * z_k + delta_r * z_r_k * r
+            x = x_parent + delta * z_k + delta_r * z_r_k * r
 
             # selection step
             if fun(x) < f_min:
