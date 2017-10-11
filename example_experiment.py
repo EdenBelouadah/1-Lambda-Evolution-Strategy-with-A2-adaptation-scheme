@@ -261,7 +261,7 @@ def A2(fun,lbounds, ubounds, budget):
     s = np.zeros(n) #zero intialization (indicated)  
     s_r = 0 #zero intialization (indicated) ?
 
-    r = np.random.rand(n) #random intilization ?
+    r = np.zeros(n) #random intilization ? ali
 
     z = np.empty(n)
     z_r = np.empty(1)
@@ -276,11 +276,12 @@ def A2(fun,lbounds, ubounds, budget):
             x = x_parent + delta * z_k + delta_r * z_r_k * r
 
             # selection step
-            if fun(x) < f_min:
+            f_current = fun(x)
+            if f_current < f_min :
                 x_min = x
                 z_r = z_r_k
                 z = z_k
-                f_min = fun(x_min)
+                f_min = f_current
 
 
         #updating params 
@@ -421,8 +422,8 @@ suite_instance = "" # "year:2016"
 suite_options = ""  # "dimensions: 2,3,5,10,20 "  # if 40 is not desired
 # for more suite options, see http://numbbo.github.io/coco-doc/C/#suite-parameters
 observer_options = ObserverOptions({  # is (inherited from) a dictionary
-                    'algorithm_info': "A SIMPLE RANDOM SEARCH ALGORITHM", # CHANGE/INCOMMENT THIS!
-                    # 'algorithm_name': "",  # default already provided from SOLVER name
+                    'algorithm_info': "ES A2", # CHANGE/INCOMMENT THIS!
+                    #'algorithm_name': "A2",  # default already provided from SOLVER name
                     # 'result_folder': "",  # default already provided from several global vars
                    })
 ######################### END CHANGE HERE ####################################
@@ -475,4 +476,3 @@ if __name__ == '__main__':
         messages.append('See "python example_experiment.py -h" for help.')
         raise ValueError('\n'.join(messages))
     main(budget, max_runs, current_batch, number_of_batches)
-
