@@ -23,7 +23,7 @@ Usage from a python shell:
 
 >>> import example_experiment as ee
 >>> ee.suite_name = "bbob-biobj"
->>> ee.SOLVER = ee.A2  # which is default anyway
+>>> ee.SOLVER = ee.random_search  # which is default anyway
 >>> ee.observer_options['algorithm_info'] = "default of example_experiment.py"
 >>> ee.main(5, 1+9, 2, 300)  # doctest: +ELLIPSIS
 Benchmarking solver...
@@ -51,6 +51,10 @@ try: from scipy.optimize import fmin_slsqp  # "pip install scipy" installs scipy
 except: pass
 try: range = xrange  # let range always be an iterator
 except NameError: pass
+
+#imports for A2 implementation 
+from math import *
+import copy 
 
 def default_observers(update={}):
     """return a map from suite names to default observer names"""
@@ -216,8 +220,86 @@ class ShortInfo(object):
 # ===============================================
 # prepare (the most basic example solver)
 # ===============================================
-def A2(fun, lbounds, ubounds, budget):
-    return 0
+def random_search(fun, lbounds, ubounds, budget):
+    """Efficient implementation of uniform random search between `lbounds` and `ubounds`."""
+    lbounds, ubounds = np.array(lbounds), np.array(ubounds)
+    dim, x_min, f_min = len(lbounds), (lbounds + ubounds) / 2, None
+    max_chunk_size = 1 + 4e4 / dim
+    while budget > 0:
+        chunk = int(min([budget, max_chunk_size]))
+        # about five times faster than "for k in range(budget):..."
+        X = lbounds + (ubounds - lbounds) * np.random.rand(chunk, dim)
+        F = [fun(x) for x in X]
+        if fun.number_of_objectives == 1:
+            index = np.argmin(F)
+            if f_min is None or F[index] < f_min:
+                x_min, f_min = X[index], F[index]
+        budget -= chunk
+    return x_min
+
+def A2(fun,lbounds, ubounds, budget):
+
+    #algorithms parameters
+    n = len(lbounds)
+    Lambda = 10
+    c =  1/sqrt(n)
+    beta = 2/n
+    xi_n = sqrt(n) * (1 - 1/(4*n) + 1/(21*n**2))
+    xi_1 = sqrt(2/pi)
+    cr = 3/n
+    beta_ind = 1/(4*n)
+    beta_r = sqrt(beta_ind)
+    cu = sqrt((2-c)/c)
+
+    #intialization    
+    x_min = (lbounds + ubounds) / 2
+    f_min = fun(x_min)
+    
+    delta = np.ones(n) #old paper 
+    delta_r = 1 
+
+    s = np.zeros(n) #zero intialization (indicated)  
+    s_r = 0 #zero intialization (indicated) ?
+
+    r = np.zeros(n) #random intilization ? ali
+
+    z = np.empty(n)
+    z_r = np.empty(1)
+
+    while budget>0:
+
+        x_parent = copy.deepcopy(x_min)
+
+        for k in xrange(Lambda):
+            z_r_k = np.random.normal(1) ###
+            z_k = np.random.normal(n) ### norm doesn't explose 
+            x = x_parent + delta * z_k + delta_r * z_r_k * r
+
+            # selection step
+            f_current = fun(x)
+            if f_current < f_min :
+                x_min = x
+                z_r = z_r_k
+                z = z_k
+                f_min = f_current
+
+
+        #updating params 
+        s = (1-c) * s + c * (cu * z)
+        if np.linalg.norm(s)>10e2: break
+       
+        delta = delta * exp(beta * (np.linalg.norm(s) - xi_n)) * np.exp(beta_ind * (np.absolute(s) - xi_1))
+        
+        s_r = max(0, (1-c)*s_r + c * (cu * z_r))
+        r_p = (1-cr) * delta_r * r + cr * (x_min - x_parent)
+
+        r = r_p / np.linalg.norm(r_p)
+        delta_r = max(delta_r * exp(beta_r*(abs(s_r)-xi_1)) , np.linalg.norm(delta)/3)
+
+        budget-= Lambda
+    
+    return x_min
+
 
 # ===============================================
 # loops over a benchmark problem suite
@@ -283,7 +365,7 @@ def coco_optimize(solver, fun, max_evals, max_runs=1e9):
                 np.random.rand(fun.dimension) - 0.5)
         fun(x0)  # can be incommented, if this is done by the solver
 
-        if solver.__name__ in ("A2", ):
+        if solver.__name__ in ("random_search", ):
             solver(fun, fun.lower_bounds, fun.upper_bounds,
                    remaining_evals)
         elif solver.__name__ == 'fmin' and solver.__globals__['__name__'] in ['cma', 'cma.evolution_strategy', 'cma.es']:
@@ -303,11 +385,10 @@ def coco_optimize(solver, fun, max_evals, max_runs=1e9):
         elif solver.__name__ == 'fmin_slsqp':
             solver(fun, x0, iter=1 + remaining_evals / fun.dimension,
                    iprint=-1)
-############################ ADD HERE ########################################
-        # ### IMPLEMENT HERE THE CALL TO ANOTHER SOLVER/OPTIMIZER ###
-        # elif True:
-        #     CALL MY SOLVER, interfaces vary
-##############################################################################
+
+        elif  solver.__name__ in ("A2", ):
+            solver(fun, fun.lower_bounds, fun.upper_bounds, remaining_evals)
+
         else:
             raise ValueError("no entry for solver %s" % str(solver.__name__))
 
@@ -341,9 +422,9 @@ suite_instance = "" # "year:2016"
 suite_options = ""  # "dimensions: 2,3,5,10,20 "  # if 40 is not desired
 # for more suite options, see http://numbbo.github.io/coco-doc/C/#suite-parameters
 observer_options = ObserverOptions({  # is (inherited from) a dictionary
-                    'algorithm_info': "A try to implement A2 Algorithm", # CHANGE/INCOMMENT THIS!
-                    # 'algorithm_name': "A2",  # default already provided from SOLVER name
-                    # 'result_folder': "my_results",  # default already provided from several global vars
+                    'algorithm_info': "ES A2", # CHANGE/INCOMMENT THIS!
+                    #'algorithm_name': "A2",  # default already provided from SOLVER name
+                    # 'result_folder': "",  # default already provided from several global vars
                    })
 ######################### END CHANGE HERE ####################################
 
