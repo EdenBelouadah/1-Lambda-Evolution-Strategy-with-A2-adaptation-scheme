@@ -268,8 +268,6 @@ def A2(fun,lbounds, ubounds, budget):
     z = np.empty(n)
     z_r = np.empty(1)
 
-    x_parent = copy.deepcopy(x_min)
-
     while budget>0:
 
         x_parent = copy.deepcopy(x_min)
