@@ -274,14 +274,14 @@ def A2(fun,lbounds, ubounds, budget):
 
         for k in xrange(Lambda):
 
-            lower = -3
-            upper = 3
+            lower = -0.01
+            upper = 0.01
             mu = 0
             sigma = 1
             
             z_k = scipy.stats.truncnorm.rvs((lower-mu)/sigma,(upper-mu)/sigma,loc=mu,scale=sigma,size=n)
             z_r_k = scipy.stats.truncnorm.rvs((lower-mu)/sigma,(upper-mu)/sigma,loc=mu,scale=sigma,size=1)
-            
+
             x = x_parent + delta * z_k + delta_r * z_r_k * r
 
             # selection step
@@ -292,10 +292,12 @@ def A2(fun,lbounds, ubounds, budget):
                 z = z_k
                 f_min = f_current
 
+        if np.linalg.norm(fun(x_min) - fun(x_parent))<10e-8 :
+            return x_min
 
         #updating params 
         s = (1-c) * s + c * (cu * z)
-       
+     
         delta = delta * exp(beta * (np.linalg.norm(s) - xi_n)) * np.exp(beta_ind * (np.absolute(s) - xi_1))
         
         s_r = max(0, (1-c)*s_r + c * (cu * z_r))
@@ -305,6 +307,7 @@ def A2(fun,lbounds, ubounds, budget):
         delta_r = max(delta_r * exp(beta_r*(abs(s_r)-xi_1)) , np.linalg.norm(delta)/3)
 
         budget-= Lambda
+
     
     return x_min
 
