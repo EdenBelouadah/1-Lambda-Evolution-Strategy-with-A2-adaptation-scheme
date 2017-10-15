@@ -274,8 +274,8 @@ def A2(fun,lbounds, ubounds, budget):
 
         for k in xrange(Lambda):
 
-            lower = -0.01
-            upper = 0.01
+            lower = -10
+            upper = 10
             mu = 0
             sigma = 1
             
@@ -292,7 +292,7 @@ def A2(fun,lbounds, ubounds, budget):
                 z = z_k
                 f_min = f_current
 
-        if np.linalg.norm(fun(x_min) - fun(x_parent))<10e-8 :
+        if np.linalg.norm(fun(x_min) - fun(x_parent))<10e-10 :
             return x_min
 
         #updating params 
