@@ -1,24 +1,35 @@
 #!/usr/bin/env python
 """Python script for the COCO experimentation module `cocoex`.
+
 Usage from a system shell::
+
     python example_experiment.py bbob
+
 runs a full but short experiment on the bbob suite. The optimization
 algorithm used is determined by the `SOLVER` attribute in this file::
+
     python example_experiment.py bbob 20
+
 runs the same experiment but with a budget of 20 * dimension
 f-evaluations::
+
     python example_experiment.py bbob-biobj 1e3 1 20
+
 runs the first of 20 batches with maximal budget of
 1000 * dimension f-evaluations on the bbob-biobj suite.
 All batches must be run to generate a complete data set.
+
 Usage from a python shell:
+
 >>> import example_experiment as ee
 >>> ee.suite_name = "bbob-biobj"
 >>> ee.SOLVER = ee.random_search  # which is default anyway
 >>> ee.observer_options['algorithm_info'] = "default of example_experiment.py"
 >>> ee.main(5, 1+9, 2, 300)  # doctest: +ELLIPSIS
 Benchmarking solver...
+
 runs the 2nd of 300 batches with budget 5 * dimension and at most 9 restarts.
+
 Calling `example_experiment` without parameters prints this
 help and the available suite names.
 """
@@ -87,12 +98,14 @@ class ObserverOptions(dict):
     
     See http://numbbo.github.io/coco-doc/C/#observer-parameters
     for details on the available (C-based) options.
+
     Details: When the `Observer` class in future accepts a dictionary
     also, this class becomes superfluous and could be replaced by a method
     `default_observer_options` similar to `default_observers`.
     """
     def __init__(self, options={}):
         """set default options from global variables and input ``options``.
+
         Default values are created "dynamically" based on the setting
         of module-wide variables `SOLVER`, `suite_name`, and `budget`.
         """
@@ -127,6 +140,7 @@ def print_flush(*args):
 
 def ascetime(sec):
     """return elapsed time as str.
+
     Example: return `"0h33:21"` if `sec == 33*60 + 21`. 
     """
     h = sec / 60**2
@@ -137,12 +151,18 @@ def ascetime(sec):
 
 class ShortInfo(object):
     """print minimal info during benchmarking.
+
     After initialization, to be called right before the solver is called with
     the respective problem. Prints nothing if only the instance id changed.
+
     Example output:
+
         Jan20 18h27:56, d=2, running: f01f02f03f04f05f06f07f08f09f10f11f12f13f14f15f16f17f18f19f20f21f22f23f24f25f26f27f28f29f30f31f32f33f34f35f36f37f38f39f40f41f42f43f44f45f46f47f48f49f50f51f52f53f54f55 done
+
         Jan20 18h27:56, d=3, running: f01f02f03f04f05f06f07f08f09f10f11f12f13f14f15f16f17f18f19f20f21f22f23f24f25f26f27f28f29f30f31f32f33f34f35f36f37f38f39f40f41f42f43f44f45f46f47f48f49f50f51f52f53f54f55 done
+
         Jan20 18h27:57, d=5, running: f01f02f03f04f05f06f07f08f09f10f11f12f13f14f15f16f17f18f19f20f21f22f23f24f25f26f27f28f29f30f31f32f33f34f35f36f37f38f39f40f41f42f43f44f45f46f47f48f49f50f51f52f53f54f55 done
+
     """
     def __init__(self):
         self.f_current = None  # function id (not problem id)
@@ -219,68 +239,70 @@ def random_search(fun, lbounds, ubounds, budget):
         budget -= chunk
     return x_min
 
-def A2(f, lbounds, ubounds, budget):
-    """mu = 1"""
-    # Initialize parameters
-    # fixed parameters
+def A2(fun,lbounds, ubounds, budget):
+
+    #algorithms parameters
     n = len(lbounds)
-    num_offsprings = 10  # lambda
-    beta = 1.0 / n
-    beta_ind = 1.0 / (4 * n)
-    beta_r = np.sqrt(beta_ind)
-    c = 1.0 / np.sqrt(n)
-    c_u = np.sqrt((2.0 - c) / c)
-    c_r = 3.0 / (n + 3)
-    chi_1 = np.sqrt(2.0 / np.pi)
-    chi_n = np.sqrt(n) * (1 - (1.0 / (4 * n)) + (1.0 / (21 * (n ** 2))))
-    # changing parameters
-    delta = np.ones(n, np.float)
-    delta_r = (1.0 / 3) * np.linalg.norm(delta)
-    s = np.zeros(n, np.float)
-    s_r = 0.0
-    r = np.zeros(n, np.float)
-    x_star = np.array([np.random.uniform(lbounds[i], ubounds[i]) for i in range(n)])
-    f_star = np.infty
+    Lambda = 10
+    c =  1/sqrt(n)
+    beta = 1/n
+    xi_n = sqrt(n) * (1 - 1/(4*n) + 1/(21*n**2))
+    xi_1 = sqrt(2/pi)
+    cr = 3/(n+3)
+    beta_ind = 1/(4*n)
+    beta_r = sqrt(beta_ind)
+    cu = sqrt((2-c)/c)
 
-    # Main loop: generate offsprings, choose best, update parameters
-    while budget > 0:
-        x_parent = x_star.copy()
-        f_star = np.infty
-        z_star = np.empty(n)
-        z_r_star = np.empty(1)
+    #intialization    
+    x_min = (lbounds + ubounds) / 2 
+    
+    delta = np.ones(n) #old paper 
+    delta_r = (1/3) * np.linalg.norm(delta)
 
-        for k in range(num_offsprings):
-            # step 0.
+    s = np.zeros(n) #zero intialization (indicated)  
+    s_r = 0 #zero intialization (indicated) 
+
+    r = np.zeros(n) 
+
+    while budget>0:
+
+        x_parent = copy.deepcopy(x_min)
+
+        f_min = np.infty
+        z = np.empty(n)
+        z_r = np.empty(1)
+
+        for k in xrange(Lambda):
+            
             z_k = np.random.normal(size=n)
             z_r_k = np.random.normal()
 
-            # step 1.
-            x_k = x_parent + (delta * z_k) + (delta_r * z_r_k * r)
-            f_current = f(x_k)
-            if f_current < f_star:
-                x_star = x_k
-                f_star = f_current
-                z_r_star = z_r_k
-                z_star = z_k
+            x = x_parent + delta * z_k + delta_r * z_r_k * r
 
-        # step 2.
-        s = ((1 - c) * s) + (c * c_u * z_star)
-        delta = delta * np.exp(beta * (np.linalg.norm(s) - chi_n)) * np.exp(beta_ind * (np.abs(s) - chi_1))
+            # selection step
+            f_current = fun(x)
+            if f_current < f_min :
+                x_min = x
+                z_r = z_r_k
+                z = z_k
+                f_min = f_current
 
-        # step 3.
-        s_r = np.max((1 - c) * s_r + c * c_u * z_r_star, 0)
-        r_prime = (1 - c_r) * delta_r * r + c_r * (x_star - x_parent)
-        r = r_prime / np.float(np.linalg.norm(r_prime))
-        delta_r = delta_r * np.exp(beta_r * (np.abs(s_r) - chi_1))
-        if delta_r < np.linalg.norm(delta) / 3.0:
-            delta_r = np.linalg.norm(delta) / 3.0
-        # delta_r = np.max(delta_r * np.exp(beta_r * (np.abs(s_r) - chi_1)), np.linalg.norm(delta) / 3)
 
-        # update budget: there one one function evaluation for each offspring ==> num_offsprings evaluations
-        budget -= num_offsprings
+        #updating params 
+        s = (1-c) * s + c * (cu * z)
+     
+        delta = delta * exp(beta * (np.linalg.norm(s) - xi_n)) * np.exp(beta_ind * (np.absolute(s) - xi_1))
+        
+        s_r = max(0, (1-c)*s_r + c * (cu * z_r))
+        r_p = (1-cr) * delta_r * r + cr * (x_min - x_parent)
 
-    # It's over, goodbye folks
-    return x_star
+        r = r_p / np.linalg.norm(r_p)
+        delta_r = max(delta_r * exp(beta_r*(abs(s_r)-xi_1)) , np.linalg.norm(delta)/3)
+
+        budget-= Lambda
+
+    
+    return x_min
 
 
 # ===============================================
@@ -291,8 +313,10 @@ def batch_loop(solver, suite, observer, budget,
     """loop over all problems in `suite` calling
     `coco_optimize(solver, problem, budget * problem.dimension, max_runs)`
     for each eligible problem.
+
     A problem is eligible if ``problem_index + current_batch - 1``
     modulo ``number_of_batches`` equals ``0``.
+
     This distribution into batches is likely to lead to similar
     runtimes for the batches, which is usually desirable.
     """
@@ -325,10 +349,12 @@ def batch_loop(solver, suite, observer, budget,
 #===============================================
 def coco_optimize(solver, fun, max_evals, max_runs=1e9):
     """`fun` is a callable, to be optimized by `solver`.
+
     The `solver` is called repeatedly with different initial solutions
     until either the `max_evals` are exhausted or `max_run` solver calls
     have been made or the `solver` has not called `fun` even once
     in the last run.
+
     Return number of (almost) independent runs.
     """
     range_ = fun.upper_bounds - fun.lower_bounds
