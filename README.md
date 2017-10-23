@@ -8,7 +8,7 @@ This is an implementation of AII algorithm by N. Hansen, A. Ostermeier, and A. G
 
 This algorithm is run on the bbob test suite from [COCO](https://github.com/numbbo/coco). For requirements and guidelines about using COCO platform, refer to the Github repo or their website. Note that we used python to work with this platform. 
 
-To run the code, you need to install the COCO platform (cf: COCO installation guide).
+To run the code, you need to install the COCO platform ([COCO installation guide](https://github.com/numbbo/coco)).
 
 Then, you can run the optimization problems by typing :
 
